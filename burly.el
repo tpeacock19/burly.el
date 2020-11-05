@@ -93,6 +93,13 @@ See variable `frameset-filter-alist'."
                                     (const :tag "Never copied" :never)
                                     (function :tag "Filter function"))))
 
+(defcustom burly-before-open-windows-hook nil
+  "Hook run before a Burly \"windows\" bookmark is opened.
+Functions are called with keyword arguments, currently including
+`:name', the name of the bookmark.  (Using `&allow-other-keys' is
+recommended for forward compatibility.)"
+  :type 'hook)
+
 (defcustom burly-window-persistent-parameters
   (list (cons 'burly-url 'writable)
         (cons 'mode-line-format 'writable))
@@ -397,6 +404,26 @@ URLOBJ should be a URL object as returned by
            for (_name . params) = bookmark
            when (equal #'burly-bookmark-handler (alist-get 'handler params))
            collect (car bookmark)))
+
+;;;;; Tabs
+
+;; Support for Emacs 27+ `tab-bar-mode'.
+
+(declare-function tab-bar-new-tab "ext:tab-bar")
+(declare-function tab-bar-rename-tab "ext:tab-bar")
+(declare-function tab-bar-select-tab-by-name "ext:tab-bar")
+(declare-function tab-bar--tab-index-by-name "ext:tab-bar")
+
+(when (featurep 'tab-bar)
+
+  (cl-defun burly-tab-bar-select-or-new-tab (&key name &allow-other-keys)
+    "Switch to an existing tab, or open a new tab, named NAME."
+    ;; `tab-bar-select-tab-by-name' always returns nil, so we have to
+    ;; use `tab-bar--tab-index-by-name' to check if such a tab exists.
+    (if (tab-bar--tab-index-by-name name)
+	    (tab-bar-select-tab-by-name name)
+      (tab-bar-new-tab)
+      (tab-bar-rename-tab name))))
 
 ;;;;; Org buffers
 
